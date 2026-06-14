@@ -1,0 +1,164 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design Tokens ─────────────────────────────────── */
+:root {
+  --bg:          #080808;
+  --surface:     #0d0d0d;
+  --surface-2:   #111111;
+  --surface-3:   #181818;
+  --border:      rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.11);
+
+  --text-1: #f0f0f0;
+  --text-2: #888888;
+  --text-3: #444444;
+
+  --green:       #10b981;
+  --green-muted: rgba(16, 185, 129, 0.10);
+  --red:         #ef4444;
+  --red-muted:   rgba(239, 68, 68, 0.10);
+  --amber:       #f59e0b;
+  --amber-muted: rgba(245, 158, 11, 0.10);
+  --blue:        #3b82f6;
+  --blue-muted:  rgba(59, 130, 246, 0.10);
+  --purple:      #8b5cf6;
+  --purple-muted:rgba(139, 92, 246, 0.10);
+}
+
+/* ─── Resets ─────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--bg);
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+  margin: 0;
+}
+
+#root {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  background: var(--bg);
+}
+
+/* ─── Scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ─── Selection ─────────────────────────────────────── */
+::selection { background: var(--green); color: #000; }
+
+/* ─── Input reset ───────────────────────────────────── */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type="number"] { -moz-appearance: textfield; }
+input, select, textarea { font-family: inherit; }
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.4);
+}
+
+/* ─── Layout ─────────────────────────────────────────── */
+.main-content {
+  padding-bottom: 72px;
+  min-height: 100dvh;
+}
+
+/* ─── Page transition ───────────────────────────────── */
+.page-enter {
+  animation: pageIn 0.18s ease-out both;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Skeleton shimmer ──────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface)   25%,
+    var(--surface-2) 50%,
+    var(--surface)   75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+/* ─── Form inputs ───────────────────────────────────── */
+.field-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-1);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+
+.field-input:focus { border-color: var(--border-strong); }
+
+.field-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+
+/* ─── Bottom sheet ──────────────────────────────────── */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+}
+
+.sheet-panel {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  border: 1px solid var(--border-strong);
+  border-bottom: none;
+  padding: 0 20px 40px;
+  max-height: 92dvh;
+  overflow-y: auto;
+}
+
+/* ─── Misc utilities ────────────────────────────────── */
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
