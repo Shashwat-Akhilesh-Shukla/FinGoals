@@ -1,0 +1,357 @@
+import 'local_storage.dart';
+
+class Api {
+  // ── Transactions ──────────────────────────────
+  static Future<Map<String, dynamic>> getTransactions(
+      {String? type, String? month, int page = 1, int perPage = 50}) async {
+    final all = await LocalStorage.getTransactions();
+    
+    // Filter
+    var filtered = all.where((tx) {
+      if (type != null && type.isNotEmpty && tx['type'] != type) return false;
+      if (month != null && month.isNotEmpty) {
+        final ts = tx['timestamp'] as String? ?? '';
+        if (!ts.startsWith(month)) return false;
+      }
+      return true;
+    }).toList();
+
+    // Sort descending by timestamp
+    filtered.sort((a, b) {
+      final tA = a['timestamp'] as String? ?? '';
+      final tB = b['timestamp'] as String? ?? '';
+      return tB.compareTo(tA);
+    });
+
+    final total = filtered.length;
+    final startIndex = (page - 1) * perPage;
+    final endIndex = startIndex + perPage;
+    
+    List<Map<String, dynamic>> items = [];
+    if (startIndex < total) {
+      final sub = filtered.sublist(startIndex, endIndex > total ? total : endIndex);
+      items = List<Map<String, dynamic>>.from(sub);
+    }
+
+    return {
+      'items': items,
+      'total': total,
+      'page': page,
+      'per_page': perPage,
+      'has_more': endIndex < total,
+    };
+  }
+
+  static Future<dynamic> createTransaction(Map<String, dynamic> data) async {
+    final txs = await LocalStorage.getTransactions();
+    
+    int maxId = 0;
+    for (final tx in txs) {
+      final id = tx['id'] as int? ?? 0;
+      if (id > maxId) maxId = id;
+    }
+
+    final newTx = Map<String, dynamic>.from(data);
+    newTx['id'] = maxId + 1;
+    txs.add(newTx);
+    await LocalStorage.saveTransactions();
+    return newTx;
+  }
+
+  static Future<dynamic> updateTransaction(
+      int id, Map<String, dynamic> data) async {
+    final txs = await LocalStorage.getTransactions();
+    final index = txs.indexWhere((tx) => tx['id'] == id);
+    if (index == -1) throw Exception('Transaction not found');
+    
+    final updated = Map<String, dynamic>.from(txs[index]);
+    data.forEach((k, v) {
+      if (v != null) updated[k] = v;
+    });
+    txs[index] = updated;
+    await LocalStorage.saveTransactions();
+    return updated;
+  }
+
+  static Future<void> deleteTransaction(int id) async {
+    final txs = await LocalStorage.getTransactions();
+    txs.removeWhere((tx) => tx['id'] == id);
+    await LocalStorage.saveTransactions();
+  }
+
+  // ── Categories ────────────────────────────────
+  static Future<List<dynamic>> getCategories() async {
+    final cats = await LocalStorage.getCategories();
+    // Sort by bucket, then name
+    final sorted = List<Map<String, dynamic>>.from(cats);
+    sorted.sort((a, b) {
+      final bucketA = a['bucket'] as String? ?? '';
+      final bucketB = b['bucket'] as String? ?? '';
+      final cmp = bucketA.compareTo(bucketB);
+      if (cmp != 0) return cmp;
+      final nameA = a['name'] as String? ?? '';
+      final nameB = b['name'] as String? ?? '';
+      return nameA.compareTo(nameB);
+    });
+    return sorted;
+  }
+
+  static Future<dynamic> createCategory(Map<String, dynamic> data) async {
+    final cats = await LocalStorage.getCategories();
+    
+    int maxId = 0;
+    for (final cat in cats) {
+      final id = cat['id'] as int? ?? 0;
+      if (id > maxId) maxId = id;
+    }
+
+    final newCat = Map<String, dynamic>.from(data);
+    newCat['id'] = maxId + 1;
+    newCat['is_custom'] = true;
+    cats.add(newCat);
+    await LocalStorage.saveCategories();
+    return newCat;
+  }
+
+  static Future<void> deleteCategory(int id) async {
+    final cats = await LocalStorage.getCategories();
+    cats.removeWhere((cat) => cat['id'] == id && cat['is_custom'] == true);
+    await LocalStorage.saveCategories();
+  }
+
+  // ── Analytics Helper ──────────────────────────
+  static Future<Map<String, dynamic>> _monthlyData(String month) async {
+    final txs = await LocalStorage.getTransactions();
+    final cats = await LocalStorage.getCategories();
+
+    double income = 0;
+    double expenses = 0;
+    double investments = 0;
+    double savings = 0;
+    double essentials = 0;
+    double lifestyle = 0;
+
+    final catBucketMap = {for (var c in cats) c['name'] as String: c['bucket'] as String};
+
+    for (final tx in txs) {
+      final ts = tx['timestamp'] as String? ?? '';
+      if (!ts.startsWith(month)) continue;
+
+      final type = tx['type'] as String? ?? '';
+      final category = tx['category'] as String? ?? '';
+      final amount = (tx['amount'] as num? ?? 0).toDouble();
+
+      if (type == 'income') {
+        income += amount;
+      } else if (type == 'expense') {
+        expenses += amount;
+        final bucket = catBucketMap[category] ?? 'other';
+        if (bucket == 'essentials') {
+          essentials += amount;
+        } else if (bucket == 'lifestyle') {
+          lifestyle += amount;
+        }
+      } else if (type == 'investment') {
+        investments += amount;
+      } else if (type == 'savings') {
+        savings += amount;
+      }
+    }
+
+    double sr = income > 0 ? ((income - expenses) / income * 100) : 0;
+    double ir = income > 0 ? (investments / income * 100) : 0;
+    double er = income > 0 ? (essentials / income * 100) : 0;
+
+    // Round to 2 decimals
+    sr = double.parse(sr.toStringAsFixed(2));
+    ir = double.parse(ir.toStringAsFixed(2));
+    er = double.parse(er.toStringAsFixed(2));
+
+    return {
+      "income": income,
+      "expenses": expenses,
+      "investments": investments,
+      "savings": savings,
+      "essentials": essentials,
+      "lifestyle": lifestyle,
+      "net": income - expenses - investments - savings,
+      "savings_rate": sr,
+      "investment_rate": ir,
+      "essential_ratio": er,
+    };
+  }
+
+  // ── Analytics ─────────────────────────────────
+  static Future<Map<String, dynamic>> getSummary({String? month}) async {
+    final m = month ?? _currentMonth();
+    final data = await _monthlyData(m);
+    return {"month": m, ...data};
+  }
+
+  static Future<Map<String, dynamic>> getVerdicts({String? month}) async {
+    final m = month ?? _currentMonth();
+    final data = await _monthlyData(m);
+
+    final double sr = (data["savings_rate"] as num).toDouble();
+    final double ir = (data["investment_rate"] as num).toDouble();
+    final double er = (data["essential_ratio"] as num).toDouble();
+
+    Map<String, dynamic> sv;
+    if (sr < 5) {
+      sv = {"label": "FAILED", "color": "red", "score": 0};
+    } else if (sr < 20) {
+      sv = {"label": "WEAK", "color": "amber", "score": 1};
+    } else if (sr < 40) {
+      sv = {"label": "GOOD", "color": "green", "score": 2};
+    } else {
+      sv = {"label": "STRONG", "color": "green", "score": 3};
+    }
+
+    final iv = {
+      "label": ir < 10 ? "NOT BUILDING WEALTH" : "BUILDING WEALTH",
+      "color": ir < 10 ? "red" : "green",
+      "score": ir < 10 ? 0 : 1,
+    };
+
+    final ev = {
+      "label": er > 60 ? "OVERDEPENDENT" : "CONTROLLED",
+      "color": er > 60 ? "red" : "green",
+      "score": er > 60 ? 0 : 1,
+    };
+
+    final int score = (sv["score"] as int) + (iv["score"] as int) + (ev["score"] as int);
+    final labelMap = {0: "CRITICAL", 1: "POOR", 2: "POOR", 3: "AVERAGE", 4: "GOOD", 5: "EXCELLENT"};
+    final overall = labelMap[score] ?? "AVERAGE";
+
+    return {
+      "savings": sv,
+      "investment": iv,
+      "expense": ev,
+      "overall_score": score,
+      "overall_label": overall,
+    };
+  }
+
+  static Future<List<dynamic>> getTrends({int months = 6}) async {
+    final List<dynamic> result = [];
+    final today = DateTime.now();
+    for (int i = months - 1; i >= 0; i--) {
+      final d = DateTime(today.year, today.month - i, 1);
+      final m = '${d.year}-${d.month.toString().padLeft(2, '0')}';
+      final data = await _monthlyData(m);
+      result.append({
+        "month": m,
+        "income": data["income"],
+        "expenses": data["expenses"],
+        "investments": data["investments"],
+        "savings": data["savings"],
+        "savings_rate": data["savings_rate"],
+      });
+    }
+    return result;
+  }
+
+  static Future<List<dynamic>> getBreakdown({String? month}) async {
+    final m = month ?? _currentMonth();
+    final txs = await LocalStorage.getTransactions();
+    final cats = await LocalStorage.getCategories();
+
+    final catBucketMap = {for (var c in cats) c['name'] as String: c['bucket'] as String};
+    final Map<String, double> categoryAmounts = {};
+
+    for (final tx in txs) {
+      final ts = tx['timestamp'] as String? ?? '';
+      if (!ts.startsWith(m)) continue;
+      if (tx['type'] != 'expense') continue;
+
+      final category = tx['category'] as String? ?? 'Other';
+      final amount = (tx['amount'] as num? ?? 0).toDouble();
+      categoryAmounts[category] = (categoryAmounts[category] ?? 0) + amount;
+    }
+
+    final sortedEntries = categoryAmounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    final total = categoryAmounts.values.fold(0.0, (a, b) => a + b);
+    final double denom = total > 0 ? total : 1.0;
+
+    return sortedEntries.map((e) {
+      final bucket = catBucketMap[e.key] ?? 'other';
+      return {
+        "category": e.key,
+        "bucket": bucket,
+        "amount": double.parse(e.value.toStringAsFixed(2)),
+        "pct": double.parse((e.value / denom * 100).toStringAsFixed(1)),
+      };
+    }).toList();
+  }
+
+  // ── Goals ─────────────────────────────────────
+  static Future<List<dynamic>> getGoals() async {
+    final goals = await LocalStorage.getGoals();
+    return goals.map((g) {
+      final target = (g['target_amount'] as num? ?? 0).toDouble();
+      final current = (g['current_amount'] as num? ?? 0).toDouble();
+      final pct = target > 0 ? ((current / target * 100).clamp(0.0, 100.0)) : 0.0;
+
+      return {
+        'id': g['id'],
+        'name': g['name'],
+        'type': g['type'],
+        'target_amount': target,
+        'current_amount': current,
+        'monthly_target': (g['monthly_target'] as num? ?? 0).toDouble(),
+        'description': g['description'],
+        'progress_pct': double.parse(pct.toStringAsFixed(1)),
+        'created_at': g['created_at'],
+      };
+    }).toList();
+  }
+
+  static Future<dynamic> createGoal(Map<String, dynamic> data) async {
+    final goals = await LocalStorage.getGoals();
+    
+    int maxId = 0;
+    for (final g in goals) {
+      final id = g['id'] as int? ?? 0;
+      if (id > maxId) maxId = id;
+    }
+
+    final newGoal = Map<String, dynamic>.from(data);
+    newGoal['id'] = maxId + 1;
+    newGoal['created_at'] = DateTime.now().toIso8601String();
+    goals.add(newGoal);
+    await LocalStorage.saveGoals();
+    return newGoal;
+  }
+
+  static Future<dynamic> updateGoal(int id, Map<String, dynamic> data) async {
+    final goals = await LocalStorage.getGoals();
+    final index = goals.indexWhere((g) => g['id'] == id);
+    if (index == -1) throw Exception('Goal not found');
+
+    final updated = Map<String, dynamic>.from(goals[index]);
+    data.forEach((k, v) {
+      if (v != null) updated[k] = v;
+    });
+    goals[index] = updated;
+    await LocalStorage.saveGoals();
+    return updated;
+  }
+
+  static Future<void> deleteGoal(int id) async {
+    final goals = await LocalStorage.getGoals();
+    goals.removeWhere((g) => g['id'] == id);
+    await LocalStorage.saveGoals();
+  }
+
+  // Helper methods
+  static String _currentMonth() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}';
+  }
+}
+
+extension _ListExt on List<dynamic> {
+  void append(dynamic element) => add(element);
+}
