@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../api.dart';
 import '../formatters.dart';
+import '../widgets/app_theme.dart';
+import '../widgets/animated_card.dart';
+import '../widgets/section_label.dart';
 
 const _goalTypes = [
-  ('emergency', 'Emergency', Color(0xFF3b82f6)),
-  ('sip',       'SIP / Invest', Color(0xFF10b981)),
-  ('custom',    'Custom', Color(0xFF8b5cf6)),
+  ('emergency', 'Emergency', AppColors.invest),
+  ('sip',       'SIP / Invest', AppColors.positive),
+  ('custom',    'Custom', Color(0xFFf0a500)),
 ];
 
 class GoalsScreen extends StatefulWidget {
@@ -21,10 +25,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
   bool _showForm = false;
 
   @override
-  void initState() {
-    super.initState();
-    _load();
-  }
+  void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -40,12 +41,14 @@ class _GoalsScreenState extends State<GoalsScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1a1a1a),
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Delete goal?', style: TextStyle(fontSize: 16)),
-        content: Text(name, style: const TextStyle(color: Color(0xFF888888))),
+        content: Text(name, style: const TextStyle(color: AppColors.textSecondary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Color(0xFFef4444)))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Delete', style: TextStyle(color: AppColors.negative))),
         ],
       ),
     );
@@ -62,36 +65,56 @@ class _GoalsScreenState extends State<GoalsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final totalGoals     = _goals.length;
+    final completedGoals = _goals.where((g) => (g['progress_pct'] as num? ?? 0) >= 100).length;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0a0a),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
+            // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Goals', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-                      Text('${_goals.length} active goals', style: const TextStyle(fontSize: 12, color: Color(0xFF555555))),
+                      const Text('Goals',
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                      RichText(
+                        text: TextSpan(children: [
+                          TextSpan(text: '$completedGoals/$totalGoals',
+                              style: const TextStyle(fontSize: 11, color: AppColors.accent1,
+                                  fontWeight: FontWeight.w700, fontFamily: 'monospace')),
+                          const TextSpan(text: ' completed',
+                              style: TextStyle(fontSize: 11, color: AppColors.textDim)),
+                        ]),
+                      ),
                     ],
                   ),
                   GestureDetector(
-                    onTap: () => setState(() => _showForm = !_showForm),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: _showForm ? const Color(0xFF1a1a1a) : const Color(0xFF10b981),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                    onTap: () { HapticFeedback.selectionClick(); setState(() => _showForm = !_showForm); },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                      decoration: _showForm
+                          ? AppDecorations.glassCard(radius: 12)
+                          : BoxDecoration(
+                              gradient: AppGradients.primary,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: AppShadows.glow(AppColors.accent1, blur: 14, spread: 4),
+                            ),
                       child: Row(
                         children: [
-                          Icon(Icons.add, size: 14, color: _showForm ? const Color(0xFF888888) : Colors.black),
-                          const SizedBox(width: 4),
-                          Text('New Goal', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _showForm ? const Color(0xFF888888) : Colors.black)),
+                          Icon(Icons.add, size: 14, color: _showForm ? AppColors.textSecondary : Colors.black),
+                          const SizedBox(width: 5),
+                          Text('New Goal',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                                  color: _showForm ? AppColors.textSecondary : Colors.black)),
                         ],
                       ),
                     ),
@@ -99,19 +122,20 @@ class _GoalsScreenState extends State<GoalsScreen> {
                 ],
               ),
             ),
+
             Expanded(
               child: RefreshIndicator(
                 onRefresh: _load,
-                color: const Color(0xFF10b981),
-                backgroundColor: const Color(0xFF1a1a1a),
+                color: AppColors.accent1,
+                backgroundColor: AppColors.surface,
                 child: _loading
-                    ? const Center(child: CircularProgressIndicator(color: Color(0xFF10b981)))
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.accent1, strokeWidth: 2))
                     : ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
                         children: [
                           if (_showForm)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.only(bottom: 12),
                               child: _GoalForm(
                                 onCancel: () => setState(() => _showForm = false),
                                 onCreate: (data) async {
@@ -125,24 +149,30 @@ class _GoalsScreenState extends State<GoalsScreen> {
                             Padding(
                               padding: const EdgeInsets.only(top: 60),
                               child: Column(
-                                children: const [
-                                  Icon(Icons.flag_rounded, size: 36, color: Color(0xFF333333)),
-                                  SizedBox(height: 12),
-                                  Text('No goals set', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF555555))),
-                                  SizedBox(height: 4),
-                                  Text('Define financial targets and track progress', style: TextStyle(fontSize: 12, color: Color(0xFF444444))),
+                                children: [
+                                  ShaderMask(
+                                    blendMode: BlendMode.srcIn,
+                                    shaderCallback: (b) => AppGradients.primary.createShader(Rect.fromLTWH(0,0,b.width,b.height)),
+                                    child: const Icon(Icons.flag_rounded, size: 44),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  const Text('No goals set',
+                                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                                  const SizedBox(height: 4),
+                                  const Text('Define financial targets and track progress',
+                                      style: TextStyle(fontSize: 12, color: AppColors.textDim)),
                                 ],
                               ),
                             ),
-                          ..._goals.map((g) => Padding(
+                          ..._goals.asMap().entries.map((entry) => Padding(
                             padding: const EdgeInsets.only(bottom: 10),
                             child: _GoalCard(
-                              goal: g,
-                              onAddAmount: (amt) => _addAmount(g, amt),
-                              onDelete: () => _delete(g['id'] as int, g['name'] as String? ?? ''),
+                              goal: entry.value,
+                              delayMs: entry.key * 60,
+                              onAddAmount: (amt) => _addAmount(entry.value, amt),
+                              onDelete: () => _delete(entry.value['id'] as int, entry.value['name'] as String? ?? ''),
                             ),
                           )),
-                          const SizedBox(height: 16),
                         ],
                       ),
               ),
@@ -154,11 +184,13 @@ class _GoalsScreenState extends State<GoalsScreen> {
   }
 }
 
+// ── Goal Card ─────────────────────────────────────────────────
 class _GoalCard extends StatefulWidget {
   final Map<String, dynamic> goal;
   final void Function(String) onAddAmount;
   final VoidCallback onDelete;
-  const _GoalCard({required this.goal, required this.onAddAmount, required this.onDelete});
+  final int delayMs;
+  const _GoalCard({required this.goal, required this.onAddAmount, required this.onDelete, this.delayMs = 0});
 
   @override
   State<_GoalCard> createState() => _GoalCardState();
@@ -172,159 +204,185 @@ class _GoalCardState extends State<_GoalCard> {
 
   @override
   Widget build(BuildContext context) {
-    final g       = widget.goal;
-    final pct     = (g['progress_pct'] as num?)?.toDouble() ?? 0;
-    final type    = g['type'] as String? ?? 'custom';
-    final gType   = _goalTypes.firstWhere((t) => t.$1 == type, orElse: () => _goalTypes.last);
-    final color   = pct >= 100 ? const Color(0xFF10b981) : pct >= 60 ? const Color(0xFFf59e0b) : const Color(0xFFef4444);
-    final rem     = ((g['target_amount'] as num?)?.toDouble() ?? 0) - ((g['current_amount'] as num?)?.toDouble() ?? 0);
-    final hasInput = _ctrl.text.isNotEmpty;
+    final g     = widget.goal;
+    final pct   = (g['progress_pct'] as num?)?.toDouble() ?? 0;
+    final type  = g['type'] as String? ?? 'custom';
+    final gType = _goalTypes.firstWhere((t) => t.$1 == type, orElse: () => _goalTypes.last);
+    final color = pct >= 100 ? AppColors.positive : pct >= 60 ? AppColors.savings : AppColors.negative;
+    final rem   = ((g['target_amount'] as num?)?.toDouble() ?? 0) - ((g['current_amount'] as num?)?.toDouble() ?? 0);
+    final isLinked = g['linked_category'] != null && (g['linked_category'] as String).isNotEmpty;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111111),
-        border: Border.all(color: const Color(0xFF1f1f1f)),
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return GlassCard(
+      delayMs: widget.delayMs,
+      padding: EdgeInsets.zero,
+      accentColor: gType.$3,
       child: Column(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40, height: 40,
-                decoration: BoxDecoration(
-                  color: gType.$3.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(_goalIcon(type), size: 18, color: gType.$3),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(g['name'] as String? ?? '', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
-                    Text(gType.$2, style: const TextStyle(fontSize: 11, color: Color(0xFF555555))),
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: widget.onDelete,
-                child: const Icon(Icons.delete_outline_rounded, size: 16, color: Color(0xFF444444)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (pct / 100).clamp(0.0, 1.0),
-              minHeight: 6,
-              backgroundColor: const Color(0xFF1f1f1f),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(text: formatINR(g['current_amount']), style: const TextStyle(fontFamily: 'monospace', fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-                    TextSpan(text: ' / ${formatINR(g['target_amount'])}', style: const TextStyle(fontSize: 12, color: Color(0xFF555555))),
-                  ],
-                ),
-              ),
-              Text(
-                pct >= 100 ? '✓' : '${pct.toStringAsFixed(1)}%',
-                style: TextStyle(fontFamily: 'monospace', fontSize: 20, fontWeight: FontWeight.w800, color: color),
-              ),
-            ],
-          ),
-
-          if (rem > 0) ...[
-            const SizedBox(height: 4),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '${formatINR(rem)} remaining${g['monthly_target'] != null ? ' · ${formatINR(g['monthly_target'])}/mo' : ''}',
-                style: const TextStyle(fontSize: 11, color: Color(0xFF555555)),
-              ),
-            ),
-          ],
-          const SizedBox(height: 10),
-
-          // Linked auto-update badge OR manual quick-add
-          if (g['linked_category'] != null && (g['linked_category'] as String).isNotEmpty)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF10b981).withOpacity(0.08),
-                border: Border.all(color: const Color(0xFF10b981).withOpacity(0.25)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.bolt_rounded, size: 13, color: Color(0xFF10b981)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'AUTO · linked to "${g['linked_category']}"',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF10b981), fontFamily: 'monospace'),
-                    ),
-                  ),
-                ],
-              ),
-            )
-          else
-            // Quick add (manual)
-            Row(
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _ctrl,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(fontSize: 13),
-                    decoration: const InputDecoration(hintText: 'Add amount...'),
-                    onChanged: (_) => setState(() {}),
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 42, height: 42,
+                      decoration: BoxDecoration(
+                        color: gType.$3.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(13),
+                        border: Border.all(color: gType.$3.withOpacity(0.3)),
+                        boxShadow: AppShadows.glow(gType.$3, spread: 2, blur: 10),
+                      ),
+                      child: Icon(_goalIcon(type), size: 19, color: gType.$3),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(g['name'] as String? ?? '',
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                          Text(gType.$2,
+                              style: const TextStyle(fontSize: 11, color: AppColors.textDim)),
+                        ],
+                      ),
+                    ),
+                    // Progress % badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(100),
+                        border: Border.all(color: color.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        pct >= 100 ? '✓ Done' : '${pct.toStringAsFixed(1)}%',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: color, fontFamily: 'monospace'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: widget.onDelete,
+                      child: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.textDim),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: hasInput ? () { widget.onAddAmount(_ctrl.text); _ctrl.clear(); setState(() {}); } : null,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: hasInput ? gType.$3 : const Color(0xFF1a1a1a),
-                      borderRadius: BorderRadius.circular(10),
+                const SizedBox(height: 14),
+
+                // Progress bar
+                AnimatedProgressBar(value: pct / 100, color: color, height: 7, delayMs: widget.delayMs + 100),
+                const SizedBox(height: 10),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    RichText(
+                      text: TextSpan(children: [
+                        TextSpan(text: formatINR(g['current_amount']),
+                            style: const TextStyle(fontFamily: 'monospace', fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+                        TextSpan(text: ' / ${formatINR(g['target_amount'])}',
+                            style: const TextStyle(fontSize: 12, color: AppColors.textDim)),
+                      ]),
                     ),
-                    child: Text(
-                      '+ Add',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: hasInput ? Colors.black : const Color(0xFF555555)),
-                    ),
-                  ),
+                    if (rem > 0)
+                      Text(
+                        '${formatINR(rem)} left',
+                        style: const TextStyle(fontSize: 11, color: AppColors.textDim),
+                      ),
+                  ],
                 ),
               ],
             ),
+          ),
+
+          // Bottom: AUTO badge or manual add
+          Container(
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              border: Border(top: BorderSide(color: AppColors.cardBorder)),
+            ),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+            child: isLinked
+                ? Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent1.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.accent1.withOpacity(0.25)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.bolt_rounded, size: 12, color: AppColors.accent1),
+                            const SizedBox(width: 5),
+                            Text(
+                              'AUTO · "${g['linked_category']}"',
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                                  color: AppColors.accent1, fontFamily: 'monospace'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(
+                        child: SizedBox(
+                          height: 38,
+                          child: TextField(
+                            controller: _ctrl,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                            decoration: InputDecoration(
+                              hintText: 'Add amount...',
+                              hintStyle: const TextStyle(color: AppColors.textDim, fontSize: 12),
+                              filled: true, fillColor: AppColors.surface,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.cardBorder)),
+                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.cardBorder)),
+                              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.accent1, width: 1.5)),
+                            ),
+                            onChanged: (_) => setState(() {}),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: _ctrl.text.isNotEmpty
+                            ? () { HapticFeedback.mediumImpact(); widget.onAddAmount(_ctrl.text); _ctrl.clear(); setState(() {}); }
+                            : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          decoration: _ctrl.text.isNotEmpty
+                              ? BoxDecoration(gradient: AppGradients.primary, borderRadius: BorderRadius.circular(10),
+                                  boxShadow: AppShadows.glow(AppColors.accent1, spread: 2, blur: 8))
+                              : BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: AppColors.cardBorder)),
+                          child: Text('+ Add',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
+                                  color: _ctrl.text.isNotEmpty ? Colors.black : AppColors.textDim)),
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ],
       ),
     );
   }
 }
 
-IconData _goalIcon(String type) {
-  return switch (type) {
-    'emergency' => Icons.shield_outlined,
-    'sip'       => Icons.trending_up_rounded,
-    _           => Icons.flag_rounded,
-  };
-}
+IconData _goalIcon(String type) => switch (type) {
+  'emergency' => Icons.shield_outlined,
+  'sip'       => Icons.trending_up_rounded,
+  _           => Icons.flag_rounded,
+};
 
+// ── Goal Form ─────────────────────────────────────────────────
 class _GoalForm extends StatefulWidget {
   final VoidCallback onCancel;
   final Future<void> Function(Map<String, dynamic>) onCreate;
@@ -345,14 +403,10 @@ class _GoalFormState extends State<_GoalForm> {
   bool _saving = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadCategories();
-  }
+  void initState() { super.initState(); _loadCategories(); }
 
   Future<void> _loadCategories() async {
     final cats = await Api.getCategories();
-    // Only show savings & investment categories as linkable targets
     final filtered = cats
         .where((c) => (c['bucket'] as String? ?? '') == 'savings' || (c['bucket'] as String? ?? '') == 'investments')
         .map((c) => c['name'] as String)
@@ -371,38 +425,44 @@ class _GoalFormState extends State<_GoalForm> {
     if (_nameCtrl.text.isEmpty || _targetCtrl.text.isEmpty) return;
     setState(() => _saving = true);
     await widget.onCreate({
-      'name':             _nameCtrl.text,
-      'type':             _type,
-      'target_amount':    double.tryParse(_targetCtrl.text) ?? 0,
-      'current_amount':   double.tryParse(_currentCtrl.text) ?? 0,
-      if (_linkedCategory != null && _linkedCategory!.isNotEmpty)
-        'linked_category': _linkedCategory,
-      if (_type == 'sip' && _monthlyCtrl.text.isNotEmpty)
-        'monthly_target': double.tryParse(_monthlyCtrl.text),
+      'name':           _nameCtrl.text,
+      'type':           _type,
+      'target_amount':  double.tryParse(_targetCtrl.text) ?? 0,
+      'current_amount': double.tryParse(_currentCtrl.text) ?? 0,
+      if (_linkedCategory != null && _linkedCategory!.isNotEmpty) 'linked_category': _linkedCategory,
+      if (_type == 'sip' && _monthlyCtrl.text.isNotEmpty) 'monthly_target': double.tryParse(_monthlyCtrl.text),
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111111),
-        border: Border.all(color: const Color(0xFF1f1f1f)),
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return GlassCard(
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('New Goal', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-              GestureDetector(onTap: widget.onCancel, child: const Icon(Icons.close, size: 16, color: Color(0xFF555555))),
+              const Text('New Goal', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+              GestureDetector(
+                onTap: widget.onCancel,
+                child: const Icon(Icons.close, size: 18, color: AppColors.textDim),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          TextField(controller: _nameCtrl, decoration: const InputDecoration(hintText: 'Goal name *')),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _nameCtrl,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Goal name *',
+              filled: true, fillColor: AppColors.card,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.cardBorder)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.cardBorder)),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.accent1, width: 1.5)),
+            ),
+          ),
           const SizedBox(height: 10),
           // Type selector
           Row(
@@ -412,15 +472,25 @@ class _GoalFormState extends State<_GoalForm> {
                 child: Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: GestureDetector(
-                    onTap: () => setState(() => _type = t.$1),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      decoration: BoxDecoration(
-                        color: active ? t.$3.withOpacity(0.12) : const Color(0xFF1a1a1a),
-                        border: Border.all(color: active ? t.$3 : const Color(0xFF2a2a2a)),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(child: Text(t.$2, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: active ? t.$3 : const Color(0xFF555555)))),
+                    onTap: () { HapticFeedback.selectionClick(); setState(() => _type = t.$1); },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: active
+                          ? BoxDecoration(
+                              color: t.$3.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: t.$3.withOpacity(0.6)),
+                              boxShadow: AppShadows.glow(t.$3, spread: 2, blur: 10),
+                            )
+                          : BoxDecoration(
+                              color: AppColors.card,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.cardBorder),
+                            ),
+                      child: Center(child: Text(t.$2,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                              color: active ? t.$3 : AppColors.textDim))),
                     ),
                   ),
                 ),
@@ -430,60 +500,61 @@ class _GoalFormState extends State<_GoalForm> {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: TextField(controller: _targetCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(hintText: 'Target ₹ *'))),
+              Expanded(child: _formField(_targetCtrl, 'Target ₹ *')),
               const SizedBox(width: 8),
-              Expanded(child: TextField(controller: _currentCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(hintText: 'Current ₹'))),
+              Expanded(child: _formField(_currentCtrl, 'Current ₹')),
             ],
           ),
           if (_type == 'sip') ...[
             const SizedBox(height: 10),
-            TextField(controller: _monthlyCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(hintText: 'Monthly target ₹')),
+            _formField(_monthlyCtrl, 'Monthly target ₹'),
           ],
-          const SizedBox(height: 10),
-          // Link Category dropdown
           if (_linkableCategories.isNotEmpty) ...[
+            const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1a1a1a),
-                border: Border.all(color: const Color(0xFF2a2a2a)),
-                borderRadius: BorderRadius.circular(10),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+              decoration: AppDecorations.glassCard(radius: 12),
               child: DropdownButton<String>(
                 value: _linkedCategory,
                 isExpanded: true,
                 underline: const SizedBox(),
-                dropdownColor: const Color(0xFF1a1a1a),
-                hint: const Text('Link to category (auto-update)', style: TextStyle(fontSize: 12, color: Color(0xFF555555))),
-                style: const TextStyle(fontSize: 12, color: Colors.white),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF555555), size: 18),
+                dropdownColor: AppColors.surface,
+                hint: const Row(children: [
+                  Icon(Icons.bolt_rounded, size: 12, color: AppColors.textDim),
+                  SizedBox(width: 6),
+                  Text('Link to category (auto-update)', style: TextStyle(fontSize: 12, color: AppColors.textDim)),
+                ]),
+                style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textDim, size: 18),
                 items: [
-                  const DropdownMenuItem<String>(value: '', child: Text('No link (manual)', style: TextStyle(fontSize: 12, color: Color(0xFF555555)))),
+                  const DropdownMenuItem<String>(value: '', child: Text('No link (manual)', style: TextStyle(fontSize: 12, color: AppColors.textDim))),
                   ..._linkableCategories.map((cat) => DropdownMenuItem<String>(
                     value: cat,
-                    child: Row(
-                      children: [
-                        const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFF10b981)),
-                        const SizedBox(width: 6),
-                        Text(cat, style: const TextStyle(fontSize: 12)),
-                      ],
-                    ),
+                    child: Row(children: [
+                      const Icon(Icons.bolt_rounded, size: 12, color: AppColors.accent1),
+                      const SizedBox(width: 6),
+                      Text(cat, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
+                    ]),
                   )),
                 ],
                 onChanged: (val) => setState(() => _linkedCategory = (val == null || val.isEmpty) ? null : val),
               ),
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           GestureDetector(
-            onTap: _saving ? null : _submit,
+            onTap: _saving ? null : () { HapticFeedback.mediumImpact(); _submit(); },
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: const Color(0xFF10b981), borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                gradient: AppGradients.primary,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: AppShadows.glow(AppColors.accent1, blur: 14, spread: 4),
+              ),
               child: Center(
                 child: _saving
                     ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                    : const Text('Create Goal', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+                    : const Text('Create Goal', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.black)),
               ),
             ),
           ),
@@ -491,4 +562,17 @@ class _GoalFormState extends State<_GoalForm> {
       ),
     );
   }
+
+  Widget _formField(TextEditingController ctrl, String hint) => TextField(
+    controller: ctrl,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+    decoration: InputDecoration(
+      hintText: hint,
+      filled: true, fillColor: AppColors.card,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.cardBorder)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.cardBorder)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.accent1, width: 1.5)),
+    ),
+  );
 }

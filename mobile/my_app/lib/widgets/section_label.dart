@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_theme.dart';
 
 class SectionLabel extends StatelessWidget {
   final String text;
@@ -6,15 +7,27 @@ class SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 9,
-        letterSpacing: 1.4,
-        fontWeight: FontWeight.w700,
-        color: Color(0xFF555555),
-        fontFamily: 'monospace',
-      ),
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: 10,
+          decoration: BoxDecoration(
+            gradient: AppGradients.primary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          text,
+          style: const TextStyle(
+            fontSize: 9,
+            letterSpacing: 1.6,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/transactions_screen.dart';
 import 'screens/goals_screen.dart';
 import 'screens/settings_screen.dart';
+import 'widgets/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: Color(0xFF050510),
+    systemNavigationBarIconBrightness: Brightness.light,
   ));
   runApp(const FinGoalsApp());
 }
 
-// ── App State (shared selected month) ────────────────────────
+// ── App State ─────────────────────────────────────────────────
 class AppState extends InheritedWidget {
   final String selectedMonth;
   final ValueChanged<String> setMonth;
@@ -33,8 +37,7 @@ class AppState extends InheritedWidget {
   }
 
   @override
-  bool updateShouldNotify(AppState old) =>
-      selectedMonth != old.selectedMonth;
+  bool updateShouldNotify(AppState old) => selectedMonth != old.selectedMonth;
 }
 
 class AppStateHolder extends StatefulWidget {
@@ -64,7 +67,7 @@ class _AppStateHolderState extends State<AppStateHolder> {
   }
 }
 
-// ── Navigation Shell ─────────────────────────────────────────
+// ── Navigation Shell ──────────────────────────────────────────
 class _NavShell extends StatefulWidget {
   final int invalidateKey;
   const _NavShell({required this.invalidateKey});
@@ -86,9 +89,13 @@ class _NavShellState extends State<_NavShell> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0a0a0a),
-      body: IndexedStack(index: _tab, children: screens),
-      bottomNavigationBar: _BottomNav(
+      backgroundColor: AppColors.bg,
+      extendBody: true,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppGradients.bgRadial),
+        child: IndexedStack(index: _tab, children: screens),
+      ),
+      bottomNavigationBar: _FloatingNav(
         current: _tab,
         onTap: (i) => setState(() => _tab = i),
       ),
@@ -96,63 +103,96 @@ class _NavShellState extends State<_NavShell> {
   }
 }
 
-class _BottomNav extends StatelessWidget {
+// ── Floating Pill Nav Bar ─────────────────────────────────────
+class _FloatingNav extends StatefulWidget {
   final int current;
   final ValueChanged<int> onTap;
-  const _BottomNav({required this.current, required this.onTap});
+  const _FloatingNav({required this.current, required this.onTap});
 
+  @override
+  State<_FloatingNav> createState() => _FloatingNavState();
+}
+
+class _FloatingNavState extends State<_FloatingNav> {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.bar_chart_rounded, 'Dashboard'),
-      (Icons.receipt_long_rounded, 'Transactions'),
-      (Icons.flag_rounded, 'Goals'),
-      (Icons.settings_rounded, 'Settings'),
+      (Icons.bar_chart_rounded,       'Dashboard'),
+      (Icons.receipt_long_rounded,    'Txns'),
+      (Icons.flag_rounded,            'Goals'),
+      (Icons.settings_rounded,        'Settings'),
     ];
+
     return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF111111),
-        border: Border(top: BorderSide(color: Color(0xFF1f1f1f), width: 1)),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xCC050510), Color(0xEE050510)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        border: const Border(top: BorderSide(color: Color(0x1Affffff), width: 1)),
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: 56,
-          child: Row(
-            children: List.generate(items.length, (i) {
-              final active = i == current;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => onTap(i),
-                  behavior: HitTestBehavior.opaque,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        items[i].$1,
-                        size: 22,
-                        color: active
-                            ? const Color(0xFF10b981)
-                            : const Color(0xFF555555),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        items[i].$2,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: active
-                              ? const Color(0xFF10b981)
-                              : const Color(0xFF555555),
-                          fontWeight: active
-                              ? FontWeight.w600
-                              : FontWeight.normal,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Container(
+            height: 58,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0d0d22),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: const Color(0xFF1e1e3a)),
+              boxShadow: const [
+                BoxShadow(color: Color(0x3300f5a0), blurRadius: 20, spreadRadius: 1),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Row(
+                children: List.generate(items.length, (i) {
+                  final active = i == widget.current;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        widget.onTap(i);
+                      },
+                      behavior: HitTestBehavior.opaque,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 280),
+                        curve: Curves.easeOutCubic,
+                        decoration: BoxDecoration(
+                          gradient: active ? AppGradients.primary : null,
+                          borderRadius: BorderRadius.circular(26),
+                          boxShadow: active
+                              ? [const BoxShadow(color: Color(0x5500f5a0), blurRadius: 12, spreadRadius: 1)]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              items[i].$1,
+                              size: 20,
+                              color: active ? Colors.black : AppColors.textDim,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              items[i].$2,
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                                color: active ? Colors.black : AppColors.textDim,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              );
-            }),
+                    ),
+                  );
+                }),
+              ),
+            ),
           ),
         ),
       ),
@@ -160,43 +200,44 @@ class _BottomNav extends StatelessWidget {
   }
 }
 
-// ── Root App ─────────────────────────────────────────────────
+// ── Root App ──────────────────────────────────────────────────
 class FinGoalsApp extends StatelessWidget {
   const FinGoalsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final base = GoogleFonts.interTextTheme(ThemeData.dark().textTheme);
     return MaterialApp(
       title: 'FinGoals',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF0a0a0a),
+        scaffoldBackgroundColor: AppColors.bg,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF10b981),
-          surface: Color(0xFF111111),
+          primary: AppColors.accent1,
+          surface: AppColors.surface,
         ),
-        textTheme: ThemeData.dark().textTheme.apply(
-              fontFamily: 'RobotoMono',
-            ),
+        textTheme: base.apply(
+          bodyColor: AppColors.textPrimary,
+          displayColor: AppColors.textPrimary,
+        ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF1a1a1a),
+          fillColor: const Color(0xFF0d0d22),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFF2a2a2a)),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.cardBorder),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFF2a2a2a)),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.cardBorder),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Color(0xFF10b981)),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.accent1, width: 1.5),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          hintStyle: const TextStyle(color: Color(0xFF555555), fontSize: 13),
-          labelStyle: const TextStyle(color: Color(0xFF888888), fontSize: 11),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          hintStyle: const TextStyle(color: AppColors.textDim, fontSize: 13),
+          labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
         ),
       ),
       home: const AppStateHolder(),
