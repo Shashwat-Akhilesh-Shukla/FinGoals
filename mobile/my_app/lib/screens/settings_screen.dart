@@ -11,12 +11,12 @@ const _buckets = [
 ];
 
 const _verdictGuide = [
-  ('STRONG',              Color(0xFF10b981), 'Savings rate > 40%'),
-  ('GOOD',                Color(0xFF10b981), 'Savings rate 20–40%'),
-  ('WEAK',                Color(0xFFf59e0b), 'Savings rate 5–20%'),
-  ('FAILED',              Color(0xFFef4444), 'Savings rate < 5%'),
-  ('OVERDEPENDENT',       Color(0xFFef4444), 'Essentials > 60% of income'),
-  ('NOT BUILDING WEALTH', Color(0xFFef4444), 'Investment rate < 10%'),
+  ('EXCELLENT', Color(0xFF10b981), 'Total Score >= 80'),
+  ('GOOD',      Color(0xFF10b981), 'Total Score 60–79'),
+  ('AVERAGE',   Color(0xFFf59e0b), 'Total Score 40–59'),
+  ('POOR',      Color(0xFFef4444), 'Total Score 20–39'),
+  ('CRITICAL',  Color(0xFFef4444), 'Total Score < 20'),
+  ('SCORING',   Color(0xFF888888), 'Max 100: Savings (20), Invest (20), Emergency (20), Expenses (20), Goals (20)'),
 ];
 
 class SettingsScreen extends StatefulWidget {

@@ -188,45 +188,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
 
-                // Ratio cards
+                // Financial Health Score v2
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    child: Row(
-                      children: [
-                        Expanded(child: StatCard(
-                          label: 'SAVINGS',
-                          value: formatPct(_summary?['savings_rate']),
-                          verdictLabel: (_verdicts?['savings'] as Map?)?.containsKey('label') == true
-                              ? _verdicts!['savings']['label'] as String?
-                              : null,
-                          verdictColor: (_verdicts?['savings'] as Map?)?.containsKey('color') == true
-                              ? _verdicts!['savings']['color'] as String?
-                              : null,
-                        )),
-                        const SizedBox(width: 8),
-                        Expanded(child: StatCard(
-                          label: 'INVEST',
-                          value: formatPct(_summary?['investment_rate']),
-                          verdictLabel: (_verdicts?['investment'] as Map?)?.containsKey('label') == true
-                              ? _verdicts!['investment']['label'] as String?
-                              : null,
-                          verdictColor: (_verdicts?['investment'] as Map?)?.containsKey('color') == true
-                              ? _verdicts!['investment']['color'] as String?
-                              : null,
-                        )),
-                        const SizedBox(width: 8),
-                        Expanded(child: StatCard(
-                          label: 'ESSENTIALS',
-                          value: formatPct(_summary?['essential_ratio']),
-                          verdictLabel: (_verdicts?['expense'] as Map?)?.containsKey('label') == true
-                              ? _verdicts!['expense']['label'] as String?
-                              : null,
-                          verdictColor: (_verdicts?['expense'] as Map?)?.containsKey('color') == true
-                              ? _verdicts!['expense']['color'] as String?
-                              : null,
-                        )),
-                      ],
+                    child: _SurfaceCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SectionLabel('FINANCIAL HEALTH SCORE'),
+                          const SizedBox(height: 16),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '${_verdicts?['total'] ?? 0}',
+                                style: TextStyle(fontSize: 48, height: 1.0, fontWeight: FontWeight.w800, color: vc, fontFamily: 'monospace'),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.only(bottom: 6),
+                                child: Text(
+                                  '/100',
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF555555), fontFamily: 'monospace'),
+                                ),
+                              ),
+                              const Spacer(),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: vc.withOpacity(0.15),
+                                    border: Border.all(color: vc.withOpacity(0.3)),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    _verdicts?['overall_label'] ?? '-',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: vc, fontFamily: 'monospace', letterSpacing: 0.5),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          if (_verdicts?['breakdown'] != null)
+                            ...(_verdicts!['breakdown'] as Map<String, dynamic>).entries.map((e) {
+                              final score = (e.value as num).toInt();
+                              final color = score >= 16 ? const Color(0xFF10b981) : score >= 10 ? const Color(0xFFf59e0b) : const Color(0xFFef4444);
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Row(
+                                  children: [
+                                    SizedBox(
+                                      width: 85,
+                                      child: Text(e.key, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF888888))),
+                                    ),
+                                    Expanded(
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: LinearProgressIndicator(
+                                          value: score / 20.0,
+                                          minHeight: 6,
+                                          backgroundColor: const Color(0xFF1f1f1f),
+                                          valueColor: AlwaysStoppedAnimation<Color>(color),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    SizedBox(
+                                      width: 45,
+                                      child: Text('$score/20', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color, fontFamily: 'monospace'), textAlign: TextAlign.right),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                        ],
+                      ),
                     ),
                   ),
                 ),

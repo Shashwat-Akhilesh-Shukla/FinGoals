@@ -196,39 +196,50 @@ class Api {
     final double ir = (data["investment_rate"] as num).toDouble();
     final double er = (data["essential_ratio"] as num).toDouble();
 
-    Map<String, dynamic> sv;
-    if (sr < 5) {
-      sv = {"label": "FAILED", "color": "red", "score": 0};
-    } else if (sr < 20) {
-      sv = {"label": "WEAK", "color": "amber", "score": 1};
-    } else if (sr < 40) {
-      sv = {"label": "GOOD", "color": "green", "score": 2};
-    } else {
-      sv = {"label": "STRONG", "color": "green", "score": 3};
+    // 1. Savings Score (/20)
+    final int sScore = sr.clamp(0, 20).round();
+
+    // 2. Investment Score (/20)
+    final int iScore = ir.clamp(0, 20).round();
+
+    // 3. Expenses Score (/20) - 20 pts if er <= 50%, 0 pts if er >= 80%
+    final int expScore = ((80 - er) / 30 * 20).clamp(0, 20).round();
+
+    // 4. Emergency & 5. Goals Scores (/20)
+    final goalsList = await getGoals();
+    
+    final emergencyGoals = goalsList.where((g) => g['type'] == 'emergency').toList();
+    int eScore = 0;
+    if (emergencyGoals.isNotEmpty) {
+      double avgE = emergencyGoals.fold(0.0, (sum, g) => sum + (g['progress_pct'] as num).toDouble()) / emergencyGoals.length;
+      eScore = (avgE / 100 * 20).clamp(0, 20).round();
     }
 
-    final iv = {
-      "label": ir < 10 ? "NOT BUILDING WEALTH" : "BUILDING WEALTH",
-      "color": ir < 10 ? "red" : "green",
-      "score": ir < 10 ? 0 : 1,
-    };
+    final activeGoals = goalsList.where((g) => g['type'] != 'emergency').toList();
+    int gScore = 0;
+    if (activeGoals.isNotEmpty) {
+      double avgG = activeGoals.fold(0.0, (sum, g) => sum + (g['progress_pct'] as num).toDouble()) / activeGoals.length;
+      gScore = (avgG / 100 * 20).clamp(0, 20).round();
+    }
 
-    final ev = {
-      "label": er > 60 ? "OVERDEPENDENT" : "CONTROLLED",
-      "color": er > 60 ? "red" : "green",
-      "score": er > 60 ? 0 : 1,
-    };
+    final int totalScore = sScore + iScore + expScore + eScore + gScore;
 
-    final int score = (sv["score"] as int) + (iv["score"] as int) + (ev["score"] as int);
-    final labelMap = {0: "CRITICAL", 1: "POOR", 2: "POOR", 3: "AVERAGE", 4: "GOOD", 5: "EXCELLENT"};
-    final overall = labelMap[score] ?? "AVERAGE";
+    String overallLabel = 'CRITICAL';
+    if (totalScore >= 80) overallLabel = 'EXCELLENT';
+    else if (totalScore >= 60) overallLabel = 'GOOD';
+    else if (totalScore >= 40) overallLabel = 'AVERAGE';
+    else if (totalScore >= 20) overallLabel = 'POOR';
 
     return {
-      "savings": sv,
-      "investment": iv,
-      "expense": ev,
-      "overall_score": score,
-      "overall_label": overall,
+      "total": totalScore,
+      "overall_label": overallLabel,
+      "breakdown": {
+        "Savings": sScore,
+        "Investment": iScore,
+        "Emergency": eScore,
+        "Expenses": expScore,
+        "Goals": gScore,
+      }
     };
   }
 
