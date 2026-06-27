@@ -259,35 +259,58 @@ class _GoalCardState extends State<_GoalCard> {
           ],
           const SizedBox(height: 10),
 
-          // Quick add
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _ctrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  style: const TextStyle(fontSize: 13),
-                  decoration: const InputDecoration(hintText: 'Add amount...'),
-                  onChanged: (_) => setState(() {}),
-                ),
+          // Linked auto-update badge OR manual quick-add
+          if (g['linked_category'] != null && (g['linked_category'] as String).isNotEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF10b981).withOpacity(0.08),
+                border: Border.all(color: const Color(0xFF10b981).withOpacity(0.25)),
+                borderRadius: BorderRadius.circular(8),
               ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: hasInput ? () { widget.onAddAmount(_ctrl.text); _ctrl.clear(); setState(() {}); } : null,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: hasInput ? gType.$3 : const Color(0xFF1a1a1a),
-                    borderRadius: BorderRadius.circular(10),
+              child: Row(
+                children: [
+                  const Icon(Icons.bolt_rounded, size: 13, color: Color(0xFF10b981)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'AUTO · linked to "${g['linked_category']}"',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF10b981), fontFamily: 'monospace'),
+                    ),
                   ),
-                  child: Text(
-                    '+ Add',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: hasInput ? Colors.black : const Color(0xFF555555)),
+                ],
+              ),
+            )
+          else
+            // Quick add (manual)
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _ctrl,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: const TextStyle(fontSize: 13),
+                    decoration: const InputDecoration(hintText: 'Add amount...'),
+                    onChanged: (_) => setState(() {}),
                   ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: hasInput ? () { widget.onAddAmount(_ctrl.text); _ctrl.clear(); setState(() {}); } : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: hasInput ? gType.$3 : const Color(0xFF1a1a1a),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '+ Add',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: hasInput ? Colors.black : const Color(0xFF555555)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
@@ -313,11 +336,29 @@ class _GoalForm extends StatefulWidget {
 
 class _GoalFormState extends State<_GoalForm> {
   String _type = 'custom';
+  String? _linkedCategory;
+  List<String> _linkableCategories = [];
   final _nameCtrl    = TextEditingController();
   final _targetCtrl  = TextEditingController();
   final _currentCtrl = TextEditingController();
   final _monthlyCtrl = TextEditingController();
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final cats = await Api.getCategories();
+    // Only show savings & investment categories as linkable targets
+    final filtered = cats
+        .where((c) => (c['bucket'] as String? ?? '') == 'savings' || (c['bucket'] as String? ?? '') == 'investments')
+        .map((c) => c['name'] as String)
+        .toList();
+    if (mounted) setState(() => _linkableCategories = filtered);
+  }
 
   @override
   void dispose() {
@@ -330,10 +371,12 @@ class _GoalFormState extends State<_GoalForm> {
     if (_nameCtrl.text.isEmpty || _targetCtrl.text.isEmpty) return;
     setState(() => _saving = true);
     await widget.onCreate({
-      'name':           _nameCtrl.text,
-      'type':           _type,
-      'target_amount':  double.tryParse(_targetCtrl.text) ?? 0,
-      'current_amount': double.tryParse(_currentCtrl.text) ?? 0,
+      'name':             _nameCtrl.text,
+      'type':             _type,
+      'target_amount':    double.tryParse(_targetCtrl.text) ?? 0,
+      'current_amount':   double.tryParse(_currentCtrl.text) ?? 0,
+      if (_linkedCategory != null && _linkedCategory!.isNotEmpty)
+        'linked_category': _linkedCategory,
       if (_type == 'sip' && _monthlyCtrl.text.isNotEmpty)
         'monthly_target': double.tryParse(_monthlyCtrl.text),
     });
@@ -395,6 +438,41 @@ class _GoalFormState extends State<_GoalForm> {
           if (_type == 'sip') ...[
             const SizedBox(height: 10),
             TextField(controller: _monthlyCtrl, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(hintText: 'Monthly target ₹')),
+          ],
+          const SizedBox(height: 10),
+          // Link Category dropdown
+          if (_linkableCategories.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1a1a1a),
+                border: Border.all(color: const Color(0xFF2a2a2a)),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: DropdownButton<String>(
+                value: _linkedCategory,
+                isExpanded: true,
+                underline: const SizedBox(),
+                dropdownColor: const Color(0xFF1a1a1a),
+                hint: const Text('Link to category (auto-update)', style: TextStyle(fontSize: 12, color: Color(0xFF555555))),
+                style: const TextStyle(fontSize: 12, color: Colors.white),
+                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF555555), size: 18),
+                items: [
+                  const DropdownMenuItem<String>(value: '', child: Text('No link (manual)', style: TextStyle(fontSize: 12, color: Color(0xFF555555)))),
+                  ..._linkableCategories.map((cat) => DropdownMenuItem<String>(
+                    value: cat,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFF10b981)),
+                        const SizedBox(width: 6),
+                        Text(cat, style: const TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  )),
+                ],
+                onChanged: (val) => setState(() => _linkedCategory = (val == null || val.isEmpty) ? null : val),
+              ),
+            ),
           ],
           const SizedBox(height: 12),
           GestureDetector(

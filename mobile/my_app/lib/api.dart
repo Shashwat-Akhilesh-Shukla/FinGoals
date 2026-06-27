@@ -55,6 +55,7 @@ class Api {
     newTx['id'] = maxId + 1;
     txs.add(newTx);
     await LocalStorage.saveTransactions();
+    await _syncLinkedGoals();
     return newTx;
   }
 
@@ -70,6 +71,7 @@ class Api {
     });
     txs[index] = updated;
     await LocalStorage.saveTransactions();
+    await _syncLinkedGoals();
     return updated;
   }
 
@@ -77,6 +79,7 @@ class Api {
     final txs = await LocalStorage.getTransactions();
     txs.removeWhere((tx) => tx['id'] == id);
     await LocalStorage.saveTransactions();
+    await _syncLinkedGoals();
   }
 
   // ── Categories ────────────────────────────────
@@ -179,6 +182,34 @@ class Api {
       "investment_rate": ir,
       "essential_ratio": er,
     };
+  }
+
+  // ── Goal Auto-Sync Helpers ────────────────────
+  /// Returns the all-time sum of transactions matching a given category name.
+  static Future<double> _computeLinkedAmount(String category) async {
+    final txs = await LocalStorage.getTransactions();
+    double total = 0;
+    for (final tx in txs) {
+      if ((tx['category'] as String? ?? '') == category) {
+        total += (tx['amount'] as num? ?? 0).toDouble();
+      }
+    }
+    return double.parse(total.toStringAsFixed(2));
+  }
+
+  /// Recalculates and persists current_amount for all goals that have a linked_category.
+  static Future<void> _syncLinkedGoals() async {
+    final goals = await LocalStorage.getGoals();
+    bool changed = false;
+    for (int i = 0; i < goals.length; i++) {
+      final cat = goals[i]['linked_category'] as String?;
+      if (cat != null && cat.isNotEmpty) {
+        final computed = await _computeLinkedAmount(cat);
+        goals[i]['current_amount'] = computed;
+        changed = true;
+      }
+    }
+    if (changed) await LocalStorage.saveGoals();
   }
 
   // ── Analytics ─────────────────────────────────
@@ -300,6 +331,8 @@ class Api {
   // ── Goals ─────────────────────────────────────
   static Future<List<dynamic>> getGoals() async {
     final goals = await LocalStorage.getGoals();
+    // Sync any linked goals before returning so the UI always has fresh data.
+    await _syncLinkedGoals();
     return goals.map((g) {
       final target = (g['target_amount'] as num? ?? 0).toDouble();
       final current = (g['current_amount'] as num? ?? 0).toDouble();
@@ -309,6 +342,7 @@ class Api {
         'id': g['id'],
         'name': g['name'],
         'type': g['type'],
+        'linked_category': g['linked_category'],
         'target_amount': target,
         'current_amount': current,
         'monthly_target': (g['monthly_target'] as num? ?? 0).toDouble(),

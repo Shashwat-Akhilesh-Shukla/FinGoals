@@ -86,16 +86,25 @@ FinGoals/
 
 ---
 
-## Verdict System
+## Financial Health Score (v2)
 
-| Verdict | Condition |
+A weighted score out of **100**, computed from 5 factors (each out of 20):
+
+| Factor | Points | How it's Scored |
+|---|---|---|
+| **Savings** | 0–20 | Savings rate capped at 20% |
+| **Investment** | 0–20 | Investment rate capped at 20% |
+| **Emergency** | 0–20 | Avg. progress of emergency goals |
+| **Expenses** | 0–20 | Essential ratio (80% = 0 pts, ≤50% = 20 pts) |
+| **Goals** | 0–20 | Avg. progress of active non-emergency goals |
+
+| Label | Score |
 |---|---|
-| **STRONG** | Savings rate > 40% |
-| **GOOD** | Savings rate 20–40% |
-| **WEAK** | Savings rate 5–20% |
-| **FAILED** | Savings rate < 5% |
-| **NOT BUILDING WEALTH** | Investment rate < 10% |
-| **OVERDEPENDENT** | Essentials > 60% of income |
+| **EXCELLENT** | ≥ 80 |
+| **GOOD** | 60–79 |
+| **AVERAGE** | 40–59 |
+| **POOR** | 20–39 |
+| **CRITICAL** | < 20 |
 
 ---
 
@@ -133,8 +142,10 @@ The FinGoals Mobile App is a Flutter implementation designed for mobile devices.
 
 4. **Goal Tracking**:
    - Set financial targets under three types: **Emergency Fund**, **SIP / Invest**, and **Custom**.
-   - Features color-coded completion progress bars (Red for <60%, Amber for 60-99%, Green for >=100%).
-   - Quick additions directly from the goals screen.
+   - **Auto-Link to Transaction Category**: When creating a goal, link it to a savings or investment category (e.g. "Emergency Fund", "SIP / Mutual Funds"). The goal's `current_amount` is automatically derived from the **cumulative all-time sum** of all transactions in that category — no manual updates needed.
+   - Linked goals show an `⚡ AUTO · linked to "[Category]"` badge instead of a manual add input.
+   - Manual goals (no link) retain the quick-add input field.
+   - Features color-coded completion progress bars (Red for <60%, Amber for 60–99%, Green for ≥100%).
    - Supports monthly targets for SIP goals.
 
 5. **Settings & Custom Categories**:
