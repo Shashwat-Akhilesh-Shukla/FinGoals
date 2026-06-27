@@ -198,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: _catNameCtrl.text.isNotEmpty
                                   ? BoxDecoration(gradient: AppGradients.primary, borderRadius: BorderRadius.circular(12),
-                                      boxShadow: AppShadows.glow(AppColors.accent1, blur: 12, spread: 3))
+                                      boxShadow: AppShadows.strongGlow(AppColors.accent1, blur: 10, spread: 2))
                                   : BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12),
                                       border: Border.all(color: AppColors.cardBorder)),
                               child: Center(

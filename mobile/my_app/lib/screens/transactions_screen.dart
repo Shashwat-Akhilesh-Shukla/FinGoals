@@ -112,7 +112,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
         decoration: BoxDecoration(
           gradient: AppGradients.primary,
           shape: BoxShape.circle,
-          boxShadow: AppShadows.glow(AppColors.accent1, blur: 20, spread: 8),
+          boxShadow: AppShadows.strongGlow(AppColors.accent1, blur: 18, spread: 6),
         ),
         child: FloatingActionButton(
           onPressed: () async {
@@ -207,7 +207,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                             ? BoxDecoration(
                                 gradient: f.$1.isEmpty ? AppGradients.primary : AppGradients.forType(f.$1),
                                 borderRadius: BorderRadius.circular(20),
-                                boxShadow: AppShadows.glow(col, spread: 2, blur: 10),
+                                boxShadow: AppShadows.glow(col, spread: 1, blur: 7),
                               )
                             : BoxDecoration(
                                 color: AppColors.surface,
@@ -526,8 +526,8 @@ class _TxSheetState extends State<_TxSheet> {
               decoration: BoxDecoration(
                 color: color.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: color.withOpacity(0.3)),
-                boxShadow: AppShadows.glow(color, spread: 4, blur: 20),
+                border: Border.all(color: color.withOpacity(0.22)),
+                boxShadow: AppShadows.glow(color, spread: 2, blur: 14),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -582,7 +582,7 @@ class _TxSheetState extends State<_TxSheet> {
                             ? BoxDecoration(
                                 gradient: AppGradients.forType(e.key),
                                 borderRadius: BorderRadius.circular(12),
-                                boxShadow: AppShadows.glow(c, spread: 2, blur: 12),
+                                boxShadow: AppShadows.glow(c, spread: 1, blur: 8),
                               )
                             : BoxDecoration(
                                 color: AppColors.card,
@@ -620,10 +620,10 @@ class _TxSheetState extends State<_TxSheet> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                       decoration: active
                           ? BoxDecoration(
-                              color: color.withOpacity(0.15),
+                              color: color.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: color.withOpacity(0.6)),
-                              boxShadow: AppShadows.glow(color, spread: 2, blur: 8),
+                              border: Border.all(color: color.withOpacity(0.5)),
+                              boxShadow: AppShadows.glow(color, spread: 1, blur: 6),
                             )
                           : BoxDecoration(
                               color: AppColors.card,
@@ -737,7 +737,7 @@ class _TxSheetState extends State<_TxSheet> {
                     ? BoxDecoration(
                         gradient: AppGradients.forType(_type),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: AppShadows.glow(color, blur: 20, spread: 4),
+                        boxShadow: AppShadows.strongGlow(color, blur: 18, spread: 3),
                       )
                     : BoxDecoration(
                         color: AppColors.card,

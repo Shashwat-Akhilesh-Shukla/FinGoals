@@ -162,7 +162,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     color: vc.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(100),
                                     border: Border.all(color: vc.withOpacity(0.4)),
-                                    boxShadow: AppShadows.glow(vc, spread: 4, blur: 14),
+                                    boxShadow: AppShadows.strongGlow(vc, spread: 4, blur: 14),
                                   ),
                                   child: Text(ol,
                                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: vc,

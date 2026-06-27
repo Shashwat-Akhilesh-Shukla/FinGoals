@@ -139,11 +139,11 @@ class _FloatingNavState extends State<_FloatingNav> {
           child: Container(
             height: 58,
             decoration: BoxDecoration(
-              color: const Color(0xFF0d0d22),
+              color: const Color(0xFF0b0b1e),
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: const Color(0xFF1e1e3a)),
+              border: Border.all(color: const Color(0xFF1c1c36)),
               boxShadow: const [
-                BoxShadow(color: Color(0x3300f5a0), blurRadius: 20, spreadRadius: 1),
+                BoxShadow(color: Color(0x2015E89E), blurRadius: 18, spreadRadius: 1),
               ],
             ),
             child: Padding(
@@ -160,14 +160,13 @@ class _FloatingNavState extends State<_FloatingNav> {
                       behavior: HitTestBehavior.opaque,
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 280),
-                        curve: Curves.easeOutCubic,
-                        decoration: BoxDecoration(
-                          gradient: active ? AppGradients.primary : null,
-                          borderRadius: BorderRadius.circular(26),
-                          boxShadow: active
-                              ? [const BoxShadow(color: Color(0x5500f5a0), blurRadius: 12, spreadRadius: 1)]
-                              : null,
-                        ),
+                        decoration: active
+                            ? BoxDecoration(
+                                gradient: AppGradients.primary,
+                                borderRadius: BorderRadius.circular(26),
+                                boxShadow: AppShadows.strongGlow(AppColors.accent1, blur: 14, spread: 6),
+                              )
+                            : null,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
