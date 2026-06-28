@@ -104,9 +104,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       decoration: _showForm
                           ? AppDecorations.glassCard(radius: 12)
                           : BoxDecoration(
-                              gradient: AppGradients.primary,
+                              color: AppColors.accent1,
                               borderRadius: BorderRadius.circular(12),
-                              boxShadow: AppShadows.strongGlow(AppColors.accent1, blur: 12, spread: 3),
+                              boxShadow: const [
+                                BoxShadow(color: Color(0x201DB888), blurRadius: 8, offset: Offset(0, 3)),
+                              ],
                             ),
                       child: Row(
                         children: [
@@ -150,11 +152,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                               padding: const EdgeInsets.only(top: 60),
                               child: Column(
                                 children: [
-                                  ShaderMask(
-                                    blendMode: BlendMode.srcIn,
-                                    shaderCallback: (b) => AppGradients.primary.createShader(Rect.fromLTWH(0,0,b.width,b.height)),
-                                    child: const Icon(Icons.flag_rounded, size: 44),
-                                  ),
+                                  const Icon(Icons.flag_rounded, size: 44, color: AppColors.accent1),
                                   const SizedBox(height: 14),
                                   const Text('No goals set',
                                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
@@ -229,8 +227,7 @@ class _GoalCardState extends State<_GoalCard> {
                       decoration: BoxDecoration(
                         color: gType.$3.withOpacity(0.10),
                         borderRadius: BorderRadius.circular(13),
-                        border: Border.all(color: gType.$3.withOpacity(0.25)),
-                        boxShadow: AppShadows.glow(gType.$3, spread: 1, blur: 5),
+                        border: Border.all(color: gType.$3.withOpacity(0.20)),
                       ),
                       child: Icon(_goalIcon(type), size: 19, color: gType.$3),
                     ),
@@ -358,10 +355,10 @@ class _GoalCardState extends State<_GoalCard> {
                           duration: const Duration(milliseconds: 180),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: _ctrl.text.isNotEmpty
-                              ? BoxDecoration(gradient: AppGradients.primary, borderRadius: BorderRadius.circular(10),
-                                  boxShadow: AppShadows.glow(AppColors.accent1, spread: 1, blur: 5))
-                              : BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: AppColors.cardBorder)),
+                            ? BoxDecoration(color: AppColors.accent1, borderRadius: BorderRadius.circular(10),
+                                boxShadow: const [BoxShadow(color: Color(0x181DB888), blurRadius: 6, offset: Offset(0, 2))])
+                            : BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: AppColors.cardBorder)),
                           child: Text('+ Add',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700,
                                   color: _ctrl.text.isNotEmpty ? Colors.black : AppColors.textDim)),
@@ -478,10 +475,9 @@ class _GoalFormState extends State<_GoalForm> {
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       decoration: active
                           ? BoxDecoration(
-                              color: t.$3.withOpacity(0.12),
+                              color: t.$3.withOpacity(0.10),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: t.$3.withOpacity(0.5)),
-                              boxShadow: AppShadows.glow(t.$3, spread: 1, blur: 7),
+                              border: Border.all(color: t.$3.withOpacity(0.4)),
                             )
                           : BoxDecoration(
                               color: AppColors.card,
@@ -549,7 +545,9 @@ class _GoalFormState extends State<_GoalForm> {
               decoration: BoxDecoration(
                 gradient: AppGradients.primary,
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: AppShadows.strongGlow(AppColors.accent1, blur: 12, spread: 3),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x181DB888), blurRadius: 8, offset: Offset(0, 3)),
+                ],
               ),
               child: Center(
                 child: _saving

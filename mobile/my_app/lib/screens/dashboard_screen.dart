@@ -98,10 +98,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       Column(
                         children: [
-                          GradientText(
+                          Text(
                             getMonthLabel(month),
-                            gradient: AppGradients.primary,
-                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, fontFamily: 'monospace'),
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, fontFamily: 'monospace', color: AppColors.textPrimary),
                           ),
                           const SizedBox(height: 2),
                           const Text('FINANCIAL REPORT',
@@ -159,10 +158,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                                   decoration: BoxDecoration(
-                                    color: vc.withOpacity(0.15),
+                                    color: vc.withOpacity(0.12),
                                     borderRadius: BorderRadius.circular(100),
-                                    border: Border.all(color: vc.withOpacity(0.4)),
-                                    boxShadow: AppShadows.strongGlow(vc, spread: 4, blur: 14),
+                                    border: Border.all(color: vc.withOpacity(0.3)),
                                   ),
                                   child: Text(ol,
                                       style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: vc,
@@ -399,11 +397,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       padding: const EdgeInsets.all(40),
                       child: Column(
                         children: [
-                          ShaderMask(
-                            blendMode: BlendMode.srcIn,
-                            shaderCallback: (b) => AppGradients.primary.createShader(Rect.fromLTWH(0,0,b.width,b.height)),
-                            child: const Icon(Icons.show_chart_rounded, size: 44),
-                          ),
+                          const Icon(Icons.show_chart_rounded, size: 44, color: AppColors.accent1),
                           const SizedBox(height: 14),
                           Text('No data for ${getMonthLabel(month)}',
                               style: const TextStyle(fontSize: 15, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
@@ -482,7 +476,7 @@ class _RingPainter extends CustomPainter {
     if (progress > 0) {
       final rect = Rect.fromCircle(center: center, radius: radius);
       final arcPaint = Paint()
-        ..shader = const LinearGradient(colors: [AppColors.accent1, AppColors.accent2]).createShader(rect)
+        ..color = color
         ..style = PaintingStyle.stroke
         ..strokeWidth = 6
         ..strokeCap = StrokeCap.round;
@@ -609,7 +603,7 @@ class _MiniTrendChart extends StatelessWidget {
                       Container(
                         width: 8, height: iH,
                         decoration: BoxDecoration(
-                          gradient: AppGradients.primary,
+                          color: AppColors.accent1,
                           borderRadius: BorderRadius.circular(3),
                         ),
                       ),

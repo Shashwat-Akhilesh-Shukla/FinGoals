@@ -13,7 +13,7 @@ class SectionLabel extends StatelessWidget {
           width: 3,
           height: 10,
           decoration: BoxDecoration(
-            gradient: AppGradients.primary,
+            color: AppColors.accent1,
             borderRadius: BorderRadius.circular(2),
           ),
         ),

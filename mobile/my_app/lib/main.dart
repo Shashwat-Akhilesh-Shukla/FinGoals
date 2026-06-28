@@ -12,7 +12,7 @@ void main() {
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
-    systemNavigationBarColor: Color(0xFF050510),
+    systemNavigationBarColor: Color(0xFF060810),
     systemNavigationBarIconBrightness: Brightness.light,
   ));
   runApp(const FinGoalsApp());
@@ -91,10 +91,7 @@ class _NavShellState extends State<_NavShell> {
     return Scaffold(
       backgroundColor: AppColors.bg,
       extendBody: true,
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppGradients.bgRadial),
-        child: IndexedStack(index: _tab, children: screens),
-      ),
+      body: IndexedStack(index: _tab, children: screens),
       bottomNavigationBar: _FloatingNav(
         current: _tab,
         onTap: (i) => setState(() => _tab = i),
@@ -124,13 +121,9 @@ class _FloatingNavState extends State<_FloatingNav> {
     ];
 
     return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xCC050510), Color(0xEE050510)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        border: const Border(top: BorderSide(color: Color(0x1Affffff), width: 1)),
+      decoration: const BoxDecoration(
+        color: Color(0xFF060810),
+        border: Border(top: BorderSide(color: Color(0x14ffffff), width: 1)),
       ),
       child: SafeArea(
         top: false,
@@ -139,11 +132,11 @@ class _FloatingNavState extends State<_FloatingNav> {
           child: Container(
             height: 58,
             decoration: BoxDecoration(
-              color: const Color(0xFF0b0b1e),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: const Color(0xFF1c1c36)),
+              border: Border.all(color: AppColors.cardBorder),
               boxShadow: const [
-                BoxShadow(color: Color(0x2015E89E), blurRadius: 18, spreadRadius: 1),
+                BoxShadow(color: Color(0x18000000), blurRadius: 12, offset: Offset(0, 4)),
               ],
             ),
             child: Padding(
@@ -162,9 +155,11 @@ class _FloatingNavState extends State<_FloatingNav> {
                         duration: const Duration(milliseconds: 280),
                         decoration: active
                             ? BoxDecoration(
-                                gradient: AppGradients.primary,
+                                color: AppColors.accent1,
                                 borderRadius: BorderRadius.circular(26),
-                                boxShadow: AppShadows.strongGlow(AppColors.accent1, blur: 14, spread: 6),
+                                boxShadow: const [
+                                  BoxShadow(color: Color(0x201DB888), blurRadius: 8, offset: Offset(0, 2)),
+                                ],
                               )
                             : null,
                         child: Column(

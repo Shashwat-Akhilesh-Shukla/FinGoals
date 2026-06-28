@@ -127,10 +127,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Container(
                             width: 36, height: 36,
                             decoration: BoxDecoration(
-                              gradient: AppGradients.primary,
+                              color: AppColors.accent1.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.accent1.withOpacity(0.3)),
                             ),
-                            child: const Icon(Icons.add, size: 18, color: Colors.black),
+                            child: const Icon(Icons.add, size: 18, color: AppColors.accent1),
                           ),
                           const SizedBox(width: 12),
                           const Expanded(
@@ -197,8 +198,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               duration: const Duration(milliseconds: 200),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: _catNameCtrl.text.isNotEmpty
-                                  ? BoxDecoration(gradient: AppGradients.primary, borderRadius: BorderRadius.circular(12),
-                                      boxShadow: AppShadows.strongGlow(AppColors.accent1, blur: 10, spread: 2))
+                                  ? BoxDecoration(color: AppColors.accent1, borderRadius: BorderRadius.circular(12),
+                                      boxShadow: const [BoxShadow(color: Color(0x181DB888), blurRadius: 8, offset: Offset(0, 3))])
                                   : BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(12),
                                       border: Border.all(color: AppColors.cardBorder)),
                               child: Center(
@@ -315,10 +316,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Container(
                     width: 38, height: 38,
                     decoration: BoxDecoration(
-                      gradient: AppGradients.primary,
+                      color: AppColors.accent1.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(11),
+                      border: Border.all(color: AppColors.accent1.withOpacity(0.3)),
                     ),
-                    child: const Icon(Icons.bolt_rounded, size: 20, color: Colors.black),
+                    child: const Icon(Icons.bolt_rounded, size: 20, color: AppColors.accent1),
                   ),
                   const SizedBox(width: 14),
                   const Column(
