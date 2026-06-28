@@ -185,26 +185,40 @@ class Api {
   }
 
   // ── Goal Auto-Sync Helpers ────────────────────
-  /// Returns the all-time sum of transactions matching a given category name.
-  static Future<double> _computeLinkedAmount(String category) async {
+  /// Returns the all-time sum of transactions matching any of the given category names.
+  static Future<double> _computeLinkedAmount(List<String> categories) async {
+    if (categories.isEmpty) return 0.0;
     final txs = await LocalStorage.getTransactions();
     double total = 0;
+    final catSet = categories.toSet();
     for (final tx in txs) {
-      if ((tx['category'] as String? ?? '') == category) {
+      if (catSet.contains(tx['category'] as String? ?? '')) {
         total += (tx['amount'] as num? ?? 0).toDouble();
       }
     }
     return double.parse(total.toStringAsFixed(2));
   }
 
-  /// Recalculates and persists current_amount for all goals that have a linked_category.
+  /// Recalculates and persists current_amount for all goals that have linked_categories.
+  /// Also migrates legacy single linked_category string to the list format.
   static Future<void> _syncLinkedGoals() async {
     final goals = await LocalStorage.getGoals();
     bool changed = false;
     for (int i = 0; i < goals.length; i++) {
-      final cat = goals[i]['linked_category'] as String?;
-      if (cat != null && cat.isNotEmpty) {
-        final computed = await _computeLinkedAmount(cat);
+      // Migrate legacy single linked_category -> linked_categories list
+      final legacyCat = goals[i]['linked_category'] as String?;
+      List<String> cats = [];
+      final rawCats = goals[i]['linked_categories'];
+      if (rawCats is List) {
+        cats = List<String>.from(rawCats.whereType<String>());
+      } else if (legacyCat != null && legacyCat.isNotEmpty) {
+        cats = [legacyCat];
+        goals[i]['linked_categories'] = cats;
+        goals[i].remove('linked_category');
+      }
+
+      if (cats.isNotEmpty) {
+        final computed = await _computeLinkedAmount(cats);
         goals[i]['current_amount'] = computed;
         changed = true;
       }
@@ -342,7 +356,8 @@ class Api {
         'id': g['id'],
         'name': g['name'],
         'type': g['type'],
-        'linked_category': g['linked_category'],
+        // Expose linked_categories as a normalized list
+        'linked_categories': _normalizeLinkedCategories(g),
         'target_amount': target,
         'current_amount': current,
         'monthly_target': (g['monthly_target'] as num? ?? 0).toDouble(),
@@ -390,10 +405,22 @@ class Api {
     await LocalStorage.saveGoals();
   }
 
-  // Helper methods
+  // ── Helper methods ──────────────────────────────
   static String _currentMonth() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}';
+  }
+
+  /// Normalises goal storage — always returns a List<String> of linked categories.
+  static List<String> _normalizeLinkedCategories(Map<String, dynamic> g) {
+    final rawCats = g['linked_categories'];
+    if (rawCats is List) {
+      return List<String>.from(rawCats.whereType<String>());
+    }
+    // Backward compat: migrate legacy linked_category string
+    final legacy = g['linked_category'] as String?;
+    if (legacy != null && legacy.isNotEmpty) return [legacy];
+    return [];
   }
 }
 

@@ -108,35 +108,12 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          color: AppColors.accent1,
-          shape: BoxShape.circle,
-          boxShadow: const [
-            BoxShadow(color: Color(0x221DB888), blurRadius: 12, offset: Offset(0, 4)),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: () async {
-            HapticFeedback.mediumImpact();
-            await showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => const _TxSheet(),
-            );
-            _reload();
-          },
-          backgroundColor: Colors.transparent,
-          foregroundColor: Colors.black,
-          elevation: 0,
-          child: const Icon(Icons.add, size: 28),
-        ),
-      ),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Column(
+              children: [
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -294,6 +271,36 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             ),
           ],
         ),
+        ),  // SafeArea
+          // FAB — positioned above the floating nav bar
+          Positioned(
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 78,
+            child: GestureDetector(
+              onTap: () async {
+                HapticFeedback.mediumImpact();
+                await showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => const _TxSheet(),
+                );
+                _reload();
+              },
+              child: Container(
+                width: 56, height: 56,
+                decoration: const BoxDecoration(
+                  color: AppColors.accent1,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(color: Color(0x221DB888), blurRadius: 12, offset: Offset(0, 4)),
+                  ],
+                ),
+                child: const Icon(Icons.add, size: 28, color: Colors.black),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

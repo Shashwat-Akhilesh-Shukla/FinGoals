@@ -208,7 +208,8 @@ class _GoalCardState extends State<_GoalCard> {
     final gType = _goalTypes.firstWhere((t) => t.$1 == type, orElse: () => _goalTypes.last);
     final color = pct >= 100 ? AppColors.positive : pct >= 60 ? AppColors.savings : AppColors.negative;
     final rem   = ((g['target_amount'] as num?)?.toDouble() ?? 0) - ((g['current_amount'] as num?)?.toDouble() ?? 0);
-    final isLinked = g['linked_category'] != null && (g['linked_category'] as String).isNotEmpty;
+    final linkedCats = List<String>.from((g['linked_categories'] as List?)?.whereType<String>().toList() ?? []);
+    final isLinked = linkedCats.isNotEmpty;
 
     return GlassCard(
       delayMs: widget.delayMs,
@@ -300,29 +301,28 @@ class _GoalCardState extends State<_GoalCard> {
             ),
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
             child: isLinked
-                ? Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: AppColors.accent1.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.accent1.withOpacity(0.25)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.bolt_rounded, size: 12, color: AppColors.accent1),
-                            const SizedBox(width: 5),
-                            Text(
-                              'AUTO · "${g['linked_category']}"',
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
-                                  color: AppColors.accent1, fontFamily: 'monospace'),
+                ? SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.bolt_rounded, size: 12, color: AppColors.accent1),
+                        const SizedBox(width: 6),
+                        const Text('AUTO', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppColors.accent1, fontFamily: 'monospace')),
+                        const SizedBox(width: 8),
+                        ...linkedCats.map((cat) => Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent1.withOpacity(0.08),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(color: AppColors.accent1.withOpacity(0.25)),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
+                            child: Text(cat, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.accent1, fontFamily: 'monospace')),
+                          ),
+                        )),
+                      ],
+                    ),
                   )
                 : Row(
                     children: [
@@ -391,7 +391,8 @@ class _GoalForm extends StatefulWidget {
 
 class _GoalFormState extends State<_GoalForm> {
   String _type = 'custom';
-  String? _linkedCategory;
+  // Multi-select: tracks which categories are linked to this goal
+  final Set<String> _linkedCategories = {};
   List<String> _linkableCategories = [];
   final _nameCtrl    = TextEditingController();
   final _targetCtrl  = TextEditingController();
@@ -426,7 +427,7 @@ class _GoalFormState extends State<_GoalForm> {
       'type':           _type,
       'target_amount':  double.tryParse(_targetCtrl.text) ?? 0,
       'current_amount': double.tryParse(_currentCtrl.text) ?? 0,
-      if (_linkedCategory != null && _linkedCategory!.isNotEmpty) 'linked_category': _linkedCategory,
+      if (_linkedCategories.isNotEmpty) 'linked_categories': _linkedCategories.toList(),
       if (_type == 'sip' && _monthlyCtrl.text.isNotEmpty) 'monthly_target': double.tryParse(_monthlyCtrl.text),
     });
   }
@@ -507,34 +508,54 @@ class _GoalFormState extends State<_GoalForm> {
           ],
           if (_linkableCategories.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-              decoration: AppDecorations.glassCard(radius: 12),
-              child: DropdownButton<String>(
-                value: _linkedCategory,
-                isExpanded: true,
-                underline: const SizedBox(),
-                dropdownColor: AppColors.surface,
-                hint: const Row(children: [
-                  Icon(Icons.bolt_rounded, size: 12, color: AppColors.textDim),
-                  SizedBox(width: 6),
-                  Text('Link to category (auto-update)', style: TextStyle(fontSize: 12, color: AppColors.textDim)),
-                ]),
-                style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
-                icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textDim, size: 18),
-                items: [
-                  const DropdownMenuItem<String>(value: '', child: Text('No link (manual)', style: TextStyle(fontSize: 12, color: AppColors.textDim))),
-                  ..._linkableCategories.map((cat) => DropdownMenuItem<String>(
-                    value: cat,
-                    child: Row(children: [
-                      const Icon(Icons.bolt_rounded, size: 12, color: AppColors.accent1),
-                      const SizedBox(width: 6),
-                      Text(cat, style: const TextStyle(fontSize: 12, color: AppColors.textPrimary)),
-                    ]),
-                  )),
-                ],
-                onChanged: (val) => setState(() => _linkedCategory = (val == null || val.isEmpty) ? null : val),
-              ),
+            const Row(children: [
+              Icon(Icons.bolt_rounded, size: 12, color: AppColors.accent1),
+              SizedBox(width: 6),
+              Text('LINK CATEGORIES (AUTO-UPDATE)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.textDim, letterSpacing: 1.2)),
+            ]),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6, runSpacing: 6,
+              children: _linkableCategories.map((cat) {
+                final selected = _linkedCategories.contains(cat);
+                return GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      if (selected) _linkedCategories.remove(cat);
+                      else _linkedCategories.add(cat);
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: selected
+                        ? BoxDecoration(
+                            color: AppColors.accent1.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.accent1.withOpacity(0.45)),
+                          )
+                        : BoxDecoration(
+                            color: AppColors.card,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.cardBorder),
+                          ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (selected) ...[
+                          const Icon(Icons.bolt_rounded, size: 11, color: AppColors.accent1),
+                          const SizedBox(width: 4),
+                        ],
+                        Text(cat, style: TextStyle(
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                          color: selected ? AppColors.accent1 : AppColors.textSecondary,
+                        )),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ],
           const SizedBox(height: 14),
